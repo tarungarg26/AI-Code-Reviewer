@@ -1,0 +1,276 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CodeLoop AI - Problem Input & Code Review</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <header class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-800 pb-6">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-xl shadow-lg shadow-indigo-500/30">
+            ⚡
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-indigo-400 via-sky-300 to-emerald-400 bg-clip-text text-transparent">
+              CodeLoop AI Reviewer
+            </h1>
+            <p class="text-xs text-slate-400">Autonomous Dual-Agent Code Generation, Critique & Refinement</p>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 md:mt-0 flex items-center gap-3">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Backend Online
+        </span>
+        <a href="/docs" target="_blank" class="text-xs text-slate-400 hover:text-slate-200 underline transition">API Docs</a>
+      </div>
+    </header>
+
+    <!-- Problem Input Card -->
+    <section class="bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl p-6 shadow-2xl mb-8">
+      <div class="flex items-center justify-between mb-3">
+        <label for="problemInput" class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+          <span>📝 Enter Your Problem Description</span>
+        </label>
+        <span class="text-xs text-slate-400">Press <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">Ctrl + Enter</kbd> to submit</span>
+      </div>
+
+      <textarea
+        id="problemInput"
+        rows="5"
+        class="w-full bg-slate-950/90 border border-slate-700/80 rounded-xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm leading-relaxed transition"
+        placeholder="Example: Write a Python function to find the longest palindromic substring in a given string. Optimize for time complexity and handle edge cases."
+      ></textarea>
+
+      <!-- Quick sample prompts -->
+      <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+        <span class="font-medium">Try quick sample:</span>
+        <button onclick="setSample(1)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition">Two Sum (O(n))</button>
+        <button onclick="setSample(2)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition">LRU Cache</button>
+        <button onclick="setSample(3)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition">Valid Parentheses</button>
+      </div>
+
+      <!-- Action Button -->
+      <div class="mt-5 flex items-center justify-end gap-3">
+        <button
+          id="clearBtn"
+          onclick="clearInput()"
+          class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-xl transition"
+        >
+          Clear
+        </button>
+        <button
+          id="submitBtn"
+          onclick="runPipeline()"
+          class="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span id="btnText">Run CodeLoop Review</span>
+          <svg id="btnSpinner" class="hidden animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- Progress Status Box (Hidden by default) -->
+    <div id="statusBox" class="hidden mb-8 p-4 rounded-xl border border-indigo-500/30 bg-indigo-950/20 text-indigo-300 text-sm flex items-center gap-3">
+      <svg class="animate-spin h-5 w-5 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+      <div>
+        <div id="statusText" class="font-medium">AI Agents are collaborating...</div>
+        <div class="text-xs text-indigo-400/80">Running Coder v1 ➔ Critic AI Review ➔ Coder v2 Refinement ➔ Diff Analytics</div>
+      </div>
+    </div>
+
+    <!-- Error Alert (Hidden by default) -->
+    <div id="errorBox" class="hidden mb-8 p-4 rounded-xl border border-red-500/30 bg-red-950/20 text-red-300 text-sm flex items-center gap-3">
+      <span class="text-xl">⚠️</span>
+      <div id="errorText"></div>
+    </div>
+
+    <!-- Results Section (Hidden until result) -->
+    <section id="resultsSection" class="hidden space-y-8">
+      <!-- Metrics Bar -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <div class="text-xs text-slate-400 font-medium">Lines Changed</div>
+          <div id="statLines" class="text-xl font-bold text-slate-100 mt-1">0</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <div class="text-xs text-slate-400 font-medium">Character Delta</div>
+          <div id="statChars" class="text-xl font-bold text-slate-100 mt-1">0</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <div class="text-xs text-slate-400 font-medium">Word Delta</div>
+          <div id="statWords" class="text-xl font-bold text-slate-100 mt-1">0</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <div class="text-xs text-slate-400 font-medium">Size Change %</div>
+          <div id="statPercent" class="text-xl font-bold text-emerald-400 mt-1">0%</div>
+        </div>
+      </div>
+
+      <!-- Code Comparison Side by Side -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Version 1 -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col">
+          <div class="px-5 py-3 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="h-2.5 w-2.5 rounded-full bg-amber-400"></span>
+              <h2 class="text-sm font-semibold text-slate-200">Coder v1 (Initial Draft)</h2>
+            </div>
+            <button onclick="copyCode('codeV1Block')" class="text-xs text-slate-400 hover:text-slate-200 bg-slate-800 px-2.5 py-1 rounded-md transition">Copy</button>
+          </div>
+          <div class="p-4 flex-1 overflow-x-auto">
+            <pre><code id="codeV1Block" class="language-python text-xs leading-relaxed font-mono"></code></pre>
+          </div>
+        </div>
+
+        <!-- Version 2 -->
+        <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl overflow-hidden flex flex-col shadow-lg shadow-emerald-500/5">
+          <div class="px-5 py-3 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+              <h2 class="text-sm font-semibold text-emerald-300">Coder v2 (Refined with Critique)</h2>
+            </div>
+            <button onclick="copyCode('codeV2Block')" class="text-xs text-slate-400 hover:text-slate-200 bg-slate-800 px-2.5 py-1 rounded-md transition">Copy</button>
+          </div>
+          <div class="p-4 flex-1 overflow-x-auto">
+            <pre><code id="codeV2Block" class="language-python text-xs leading-relaxed font-mono"></code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Critic Review Section -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-slate-800 bg-slate-950/50 flex items-center gap-2">
+          <span class="h-2.5 w-2.5 rounded-full bg-indigo-400"></span>
+          <h2 class="text-sm font-semibold text-indigo-300">Critic AI Feedback</h2>
+        </div>
+        <div id="criticBlock" class="p-6 prose prose-invert prose-slate max-w-none text-sm text-slate-300 leading-relaxed"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const samples = {
+      1: "Write a Python function two_sum(nums, target) that finds two numbers in nums that add up to target and returns their indices. Aim for O(n) time complexity.",
+      2: "Design a data structure for Least Recently Used (LRU) Cache in Python. It should support get(key) and put(key, value) operations in O(1) time complexity.",
+      3: "Write a Python function is_valid(s: str) -> bool that determines if an input string of brackets '()[]{}' is valid. Handle edge cases like empty string or unmatched brackets."
+    };
+
+    function setSample(id) {
+      document.getElementById('problemInput').value = samples[id];
+      document.getElementById('problemInput').focus();
+    }
+
+    function clearInput() {
+      document.getElementById('problemInput').value = '';
+      document.getElementById('resultsSection').classList.add('hidden');
+      document.getElementById('errorBox').classList.add('hidden');
+    }
+
+    // Ctrl + Enter shortcut
+    document.getElementById('problemInput').addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        runPipeline();
+      }
+    });
+
+    function cleanCode(raw) {
+      if (!raw) return '';
+      // Remove markdown code fences if present
+      let s = raw.trim();
+      if (s.startsWith('`')) {
+        s = s.replace(/^`[a-zA-Z]*\n?/, '');
+        s = s.replace(/`$/, '');
+      }
+      return s.trim();
+    }
+
+    async function runPipeline() {
+      const input = document.getElementById('problemInput').value.trim();
+      if (!input) {
+        alert('Please enter a problem description first!');
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      const btnText = document.getElementById('btnText');
+      const btnSpinner = document.getElementById('btnSpinner');
+      const statusBox = document.getElementById('statusBox');
+      const errorBox = document.getElementById('errorBox');
+      const resultsSection = document.getElementById('resultsSection');
+
+      submitBtn.disabled = true;
+      btnText.innerText = 'Processing...';
+      btnSpinner.classList.remove('hidden');
+      statusBox.classList.remove('hidden');
+      errorBox.classList.add('hidden');
+      resultsSection.classList.add('hidden');
+
+      try {
+        const response = await fetch('/review', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ problem: input })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.detail || ('HTTP error ' + response.status));
+        }
+
+        const data = await response.json();
+
+        // Render code blocks
+        const codeV1El = document.getElementById('codeV1Block');
+        const codeV2El = document.getElementById('codeV2Block');
+        codeV1El.textContent = cleanCode(data.code_v1);
+        codeV2El.textContent = cleanCode(data.code_v2);
+        hljs.highlightElement(codeV1El);
+        hljs.highlightElement(codeV2El);
+
+        // Render Critic Review Markdown
+        document.getElementById('criticBlock').innerHTML = marked.parse(data.critic_review || 'No critique provided.');
+
+        // Render stats
+        const diff = data.comparison?.difference || {};
+        document.getElementById('statLines').innerText = (diff.lines >= 0 ? '+' : '') + (diff.lines ?? 0);
+        document.getElementById('statChars').innerText = (diff.characters >= 0 ? '+' : '') + (diff.characters ?? 0);
+        document.getElementById('statWords').innerText = (diff.words >= 0 ? '+' : '') + (diff.words ?? 0);
+        const pct = data.comparison?.character_change_percent ?? 0;
+        document.getElementById('statPercent').innerText = (pct >= 0 ? '+' : '') + pct + '%';
+
+        resultsSection.classList.remove('hidden');
+      } catch (err) {
+        document.getElementById('errorText').innerText = err.message || 'An error occurred.';
+        errorBox.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        btnText.innerText = 'Run CodeLoop Review';
+        btnSpinner.classList.add('hidden');
+        statusBox.classList.add('hidden');
+      }
+    }
+
+    function copyCode(elementId) {
+      const text = document.getElementById(elementId).textContent;
+      navigator.clipboard.writeText(text);
+      alert('Code copied to clipboard!');
+    }
+  </script>
+</body>
+</html>

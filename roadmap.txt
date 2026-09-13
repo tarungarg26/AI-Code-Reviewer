@@ -1,0 +1,7 @@
+take 2 api keys
+give context to one as a coder other as a critiser 
+coder writes code and goves to critosed
+it gives review 
+coder codes again
+compare number of char in both
+
